@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, Button, View, TouchableOpacity, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+
 import styles from "./styleMonitor";
 client = new Paho.Client(
  "mqttserver.tk",
@@ -12,21 +13,42 @@ client = new Paho.Client(
 );
 
 export default function App() {
-
+  const [nitro, setNitro] = useState(0);
+  const [photpho, setPhotpho] = useState(0);
+  const [kali, setKali] = useState(0);
+  const [elec, setElec] = useState(0);
+  const [pH, setPH] = useState(0);
   const [valueTemp, setValueTemp] = useState([1,2,3,4,5]);
   const [valueHumi, setValueHumi] = useState([1,2,3,4,5]);
   function onMessage(message) {
-    setValueTemp(prevValue => [...prevValue, JSON.parse(message.payloadString).sensors[0].sensor_value]);
-    setValueHumi(prevValue => [...prevValue, JSON.parse(message.payloadString).sensors[1].sensor_value]);
-    console.log(message.payloadString)
-    // if (value.length > 5) {
-    //   setValue(value.shift());
-    // }
-  }
+    if(message.topic == '/innovation/airmonitoring/'){
+      if(valueTemp.length == 7){
+        let tempList = [...valueTemp];
+        tempList.shift();
+        setValueTemp(tempList)  
+      }
+      if(valueHumi.length == 7){
+        let humiList = [...valueHumi];
+        humiList.shift();
+        setValueHumi(humiList)     
+      }
+      setValueTemp(prevValue => [...prevValue, JSON.parse(message.payloadString).sensors[0].sensor_value]);
+      setValueHumi(prevValue => [...prevValue, JSON.parse(message.payloadString).sensors[1].sensor_value]);
+    }
 
+    if(message.topic == '/innovation/soilmonitoring/'){
+      setNitro(JSON.parse(message.payloadString).sensors[4].sensor_value)
+      setPhotpho(JSON.parse(message.payloadString).sensors[5].sensor_value)
+      setKali(JSON.parse(message.payloadString).sensors[6].sensor_value)
+      setPH(JSON.parse(message.payloadString).sensors[2].sensor_value)
+      setElec(JSON.parse(message.payloadString).sensors[3].sensor_value)
+    }
+
+  }
   function onConnect(){
     console.log("onConnect");
     client.subscribe("/innovation/airmonitoring/");
+    client.subscribe("/innovation/soilmonitoring/");
     client.onMessageArrived = onMessage;
   }
 
@@ -149,16 +171,36 @@ export default function App() {
         </View>
       </View>
       </View>
+      
+      <View style={styles.container}>
+            <View style={styles.soilArea}>
+                <View style={styles.nitrogenArea}>
+                    <Text style={styles.soilText}>Nitrogen</Text>
+                    <Text style={styles.soilText}>{nitro} mg/kg </Text>
+                </View>
+                <View style={styles.photphorusArea}>
+                    <Text style={styles.soilText}>Photphorus</Text>
+                    <Text style={styles.soilText}>{photpho} mg/kg</Text>
+                </View>
+                <View style={styles.kaliArea}>
+                    <Text style={styles.soilText}>Kali</Text>
+                    <Text style={styles.soilText}>{kali} mg/kg</Text>
+                </View>
+            </View>
+
+            <View style={styles.electricArea}>
+                <View style={styles.elecConducArea}>
+                    <Text style={styles.soilText}>Electrical Conductivity</Text>
+                    <Text style={styles.soilText}>{elec} us/cm</Text>
+                </View>
+                <View style={styles.potenHydroArea}>
+                    <Text style={styles.soilText}>Potential Hydrogen</Text>
+                    <Text style={styles.soilText}>{pH} pH</Text>
+                </View>
+            </View>
+        </View>
       </ScrollView>
       
     </View>
   );
 }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-// });
